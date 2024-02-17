@@ -15,6 +15,14 @@ import (
 
 var v8once sync.Once
 
+type MicrotasksPolicy = int
+
+const (
+	MicrotasksPolicyExplicit MicrotasksPolicy = 0
+	MicrotasksPolicyScoped                    = 1
+	MicrotasksPolicyAuto                      = 2
+)
+
 // Isolate is a JavaScript VM instance with its own heap and
 // garbage collector. Most applications will create one isolate
 // with many V8 contexts for execution.
@@ -66,6 +74,18 @@ func NewIsolate() *Isolate {
 // of JavaScript execution in the given isolate.
 func (i *Isolate) TerminateExecution() {
 	C.IsolateTerminateExecution(i.ptr)
+}
+
+func (i *Isolate) GetMicrotasksPolicy() MicrotasksPolicy {
+	return MicrotasksPolicy(C.IsolateGetMicrotasksPolicy(i.ptr))
+}
+
+func (i *Isolate) SetMicrotasksPolicy(policy MicrotasksPolicy) {
+	C.IsolateSetMicrotasksPolicy(i.ptr, C.int(policy))
+}
+
+func (i *Isolate) PerformMicrotaskCheckpoint() {
+	C.IsolatePerformMicrotaskCheckpoint(i.ptr)
 }
 
 // IsExecutionTerminating returns whether V8 is currently terminating

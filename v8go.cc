@@ -189,6 +189,16 @@ void IsolateTerminateExecution(IsolatePtr iso) {
   iso->TerminateExecution();
 }
 
+int IsolateGetMicrotasksPolicy(IsolatePtr iso) {
+  ISOLATE_SCOPE(iso)
+  return (int)iso->GetMicrotasksPolicy();
+}
+
+void IsolateSetMicrotasksPolicy(IsolatePtr iso, int policy) {
+  ISOLATE_SCOPE(iso)
+  iso->SetMicrotasksPolicy((MicrotasksPolicy)policy);
+}
+
 int IsolateIsExecutionTerminating(IsolatePtr iso) {
   return iso->IsExecutionTerminating();
 }

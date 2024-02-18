@@ -33,6 +33,8 @@ type Isolate struct {
 	cbSeq   int
 	cbs     map[int]FunctionCallback
 
+	prcb PromiseRejectCallback
+
 	null      *Value
 	undefined *Value
 }
@@ -76,10 +78,12 @@ func (i *Isolate) TerminateExecution() {
 	C.IsolateTerminateExecution(i.ptr)
 }
 
+// GetMicrotasksPolicy returns the current MicrotasksPolicy
 func (i *Isolate) GetMicrotasksPolicy() MicrotasksPolicy {
 	return MicrotasksPolicy(C.IsolateGetMicrotasksPolicy(i.ptr))
 }
 
+// SetMicrotasksPolicy sets a new value for the MicrotasksPolicy
 func (i *Isolate) SetMicrotasksPolicy(policy MicrotasksPolicy) {
 	C.IsolateSetMicrotasksPolicy(i.ptr, C.int(policy))
 }
@@ -202,4 +206,32 @@ func (i *Isolate) getCallback(ref int) FunctionCallback {
 	i.cbMutex.RLock()
 	defer i.cbMutex.RUnlock()
 	return i.cbs[ref]
+}
+
+// SetPromiseRejectCallback sets the callback for handling rejected promises
+func (i *Isolate) SetPromiseRejectCallback(cb PromiseRejectCallback) {
+	i.cbMutex.Lock()
+	i.prcb = cb
+
+	if cb != nil {
+		C.IsolateSetPromiseRejectCallback(i.ptr)
+	}
+
+	i.cbMutex.Unlock()
+}
+
+//export goIsolatePromiseRejectCallback
+func goIsolatePromiseRejectCallback(ctxref int, event int, value C.ValuePtr, promise C.ValuePtr) {
+	ctx := getContext(ctxref)
+
+	if ctx.iso.prcb == nil {
+		return
+	}
+
+	ctx.iso.prcb(&PromiseRejectMessage{
+		ctx:     ctx,
+		event:   event,
+		value:   &Value{ptr: value, ctx: ctx},
+		promise: &Promise{&Object{&Value{promise, ctx}}},
+	})
 }

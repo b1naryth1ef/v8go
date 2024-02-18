@@ -199,6 +199,35 @@ void IsolateSetMicrotasksPolicy(IsolatePtr iso, int policy) {
   iso->SetMicrotasksPolicy((MicrotasksPolicy)policy);
 }
 
+static void IsolatePromiseRejectHook(PromiseRejectMessage message) {
+  auto promise = message.GetPromise();
+  Isolate* iso = promise->GetIsolate();
+  Local<Context> local_ctx = iso->GetCurrentContext();
+  int ctx_ref = local_ctx->GetEmbedderData(1).As<Integer>()->Value();
+  m_ctx* ctx = goContext(ctx_ref);
+
+  m_value* value = new m_value;
+  value->id = 0;
+  value->iso = iso;
+  value->ctx = ctx;
+  value->ptr.Reset(iso, Persistent<Value, CopyablePersistentTraits<Value>>(
+                            iso, message.GetValue()));
+
+  m_value* promise_val = new m_value;
+  promise_val->id = 0;
+  promise_val->iso = iso;
+  promise_val->ctx = ctx;
+  promise_val->ptr.Reset(iso,
+      Persistent<Value, CopyablePersistentTraits<Value>>(iso, promise));
+  
+  goIsolatePromiseRejectCallback(ctx_ref, message.GetEvent(), tracked_value(ctx, value), tracked_value(ctx, promise_val));
+}
+
+void IsolateSetPromiseRejectCallback(IsolatePtr iso) {
+  iso->SetPromiseRejectCallback(&IsolatePromiseRejectHook);
+}
+
+
 int IsolateIsExecutionTerminating(IsolatePtr iso) {
   return iso->IsExecutionTerminating();
 }

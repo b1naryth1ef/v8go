@@ -125,3 +125,28 @@ func (p *Promise) Catch(cb FunctionCallback) *Promise {
 	}
 	return &Promise{obj}
 }
+
+type PromiseRejectCallback func(message *PromiseRejectMessage)
+
+type PromiseRejectMessage struct {
+	ctx     *Context
+	event   int
+	value   *Value
+	promise *Promise
+}
+
+func (p *PromiseRejectMessage) Context() *Context {
+	return p.ctx
+}
+
+func (p *PromiseRejectMessage) Event() int {
+	return p.event
+}
+
+func (p *PromiseRejectMessage) Value() *Value {
+	return p.value
+}
+
+func (p *PromiseRejectMessage) Promise() *Promise {
+	return p.promise
+}
